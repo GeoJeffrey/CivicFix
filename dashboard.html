@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" style="color-scheme: light;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CivicFix Bengaluru — Zonal Officer Console for tracking overdue civic grievances, SLA compliance, and field crew dispatch across 8 Bengaluru zones.">
+  <title>CivicFix Bengaluru — Officer Console (Sample Dashboard)</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            civic: {
+              50:  'oklch(0.96 0.02 160)',
+              500: 'oklch(0.40 0.13 160)',
+              600: 'oklch(0.34 0.14 160)',
+            },
+            terra: {
+              500: 'oklch(0.62 0.17 48)',
+            },
+            alert: {
+              50:  'oklch(0.95 0.03 28)',
+              500: 'oklch(0.55 0.22 28)',
+            },
+            active: {
+              50:  'oklch(0.95 0.02 230)',
+              500: 'oklch(0.52 0.16 230)',
+            },
+            resolved: {
+              50:  'oklch(0.95 0.02 142)',
+              500: 'oklch(0.54 0.16 142)',
+            },
+            surface: 'oklch(0.985 0.002 100)',
+            panel: '#ffffff',
+            border: 'oklch(0.90 0.01 100)',
+            txt: 'oklch(0.25 0.02 260)',
+            'txt-sec': 'oklch(0.55 0.01 260)',
+          },
+          fontFamily: {
+            body: ["'Plus Jakarta Sans'", 'system-ui', 'sans-serif'],
+            heading: ["'Space Grotesk'", "'Plus Jakarta Sans'", 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer base {
+      body {
+        @apply bg-surface text-txt font-body leading-relaxed;
+      }
+    }
+    @layer utilities {
+      .sidebar-active {
+        @apply bg-civic-50 text-civic-600 font-semibold border-l-2 border-civic-500;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Skip Link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-civic-500 focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:outline-2 focus:outline-offset-2 focus:outline-civic-500">
+    Skip to main content
+  </a>
+
+  <!-- ===================== TOP BAR ===================== -->
+  <header class="bg-panel border-b border-border h-14 flex items-center px-4 lg:px-6 sticky top-0 z-40">
+    <div class="flex items-center gap-3 mr-auto">
+      <!-- Mobile hamburger -->
+      <button type="button" id="sidebarToggle" class="lg:hidden p-1.5 rounded-md hover:bg-civic-50 transition-colors" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebarPanel">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+
+      <!-- Brand -->
+      <a href="index.html" class="flex items-center gap-2.5 no-underline" aria-label="CivicFix Bengaluru Home">
+        <svg width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+          <path d="M18 5L7 11V18C7 24.5 11.5 30.5 18 32C24.5 30.5 29 24.5 29 18V11L18 5Z" fill="oklch(0.40 0.13 160)" stroke="oklch(0.34 0.14 160)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 18L16 22L24 14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="flex flex-col leading-tight">
+          <span class="font-heading font-bold text-sm text-txt">Civic<span class="text-civic-500">Fix</span></span>
+          <span class="text-[10px] text-txt-sec">Officer Console</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Zone Filter -->
+    <div class="flex items-center gap-3">
+      <label for="zoneFilter" class="text-xs text-txt-sec hidden sm:inline">Zone:</label>
+      <select id="zoneFilter" class="text-sm border border-border rounded-md px-2.5 py-1.5 bg-panel text-txt focus:outline-2 focus:outline-offset-1 focus:outline-civic-500 cursor-pointer">
+        <option value="all">All Zones</option>
+        <option value="Indiranagar">Indiranagar</option>
+        <option value="Koramangala">Koramangala</option>
+        <option value="Jayanagar">Jayanagar</option>
+        <option value="Whitefield">Whitefield</option>
+        <option value="Malleshwaram">Malleshwaram</option>
+        <option value="HSR Layout">HSR Layout</option>
+        <option value="Yelahanka">Yelahanka</option>
+        <option value="Electronic City">Electronic City</option>
+      </select>
+
+      <!-- IST Clock -->
+      <time id="istClock" class="text-xs text-txt-sec font-mono hidden md:inline" datetime="">--</time>
+
+      <!-- Sample Data Badge -->
+      <span class="bg-civic-50 text-civic-600 text-[10px] font-semibold px-2 py-0.5 rounded-full hidden sm:inline">Sample data</span>
+    </div>
+  </header>
+
+  <div class="flex min-h-[calc(100vh-3.5rem)]">
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <!-- Backdrop overlay for mobile -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-black/30 z-30 hidden lg:hidden" aria-hidden="true"></div>
+
+    <aside id="sidebarPanel" class="fixed lg:sticky top-14 left-0 z-30 h-[calc(100vh-3.5rem)] bg-panel border-r border-border flex flex-col w-56 -translate-x-full lg:translate-x-0 transition-transform duration-200" aria-label="Dashboard Navigation">
+      <nav class="flex-1 py-3 px-2" aria-label="Main navigation">
+        <ul class="space-y-0.5">
+          <li>
+            <a href="#" class="sidebar-link sidebar-active flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors" aria-current="page" data-nav="overview">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              <span class="sidebar-label">Overview</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-txt-sec hover:bg-civic-50 hover:text-civic-600 transition-colors" data-nav="tickets">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span class="sidebar-label">All Tickets</span>
+            </a>
+          </li>
+          <li>
+            <a href="index.html#transparency" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-txt-sec hover:bg-civic-50 hover:text-civic-600 transition-colors" data-nav="zones">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              <span class="sidebar-label">Zone Map</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-txt-sec hover:bg-civic-50 hover:text-civic-600 transition-colors" data-nav="sla-log">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span class="sidebar-label">SLA Audit Log</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Separator -->
+        <hr class="my-3 border-border">
+
+        <!-- External Links -->
+        <ul class="space-y-0.5">
+          <li>
+            <a href="index.html" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-txt-sec hover:bg-civic-50 hover:text-civic-600 transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span class="sidebar-label">Public Portal</span>
+            </a>
+          </li>
+          <li>
+            <a href="index.html#report-form" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-txt-sec hover:bg-civic-50 hover:text-civic-600 transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="sidebar-label">File a Report</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="px-3 py-3 border-t border-border">
+        <p class="text-[10px] text-txt-sec leading-snug">Student project. Not affiliated with BBMP, BESCOM, BWSSB, or the Government of Karnataka.</p>
+      </div>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main id="main-content" class="flex-1 p-4 lg:p-6 overflow-x-hidden">
+
+      <!-- Page Title -->
+      <div class="mb-5">
+        <h1 class="font-heading font-bold text-xl text-txt">Bengaluru Grievance Overview</h1>
+        <p class="text-sm text-txt-sec mt-0.5">Working-day SLA compliance across 8 zones. Excludes Karnataka holidays and weekends.</p>
+      </div>
+
+      <!-- ============ PRIORITY STRIP ============ -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6" id="priorityStrip">
+
+        <!-- Counter 1: Overdue Now -->
+        <div class="rounded-lg border border-border bg-alert-50 p-4" data-counter="overdue">
+          <p class="text-sm text-txt-sec mb-1">Overdue Right Now</p>
+          <p class="text-3xl font-heading font-bold text-alert-500" id="countOverdue">23</p>
+          <p class="text-[10px] text-txt-sec mt-1">(Sample data)</p>
+        </div>
+
+        <!-- Counter 2: Due Today -->
+        <div class="rounded-lg border border-border bg-active-50 p-4" data-counter="due-today">
+          <p class="text-sm text-txt-sec mb-1">Due by EOD Today</p>
+          <p class="text-3xl font-heading font-bold text-active-500" id="countDueToday">41</p>
+          <p class="text-[10px] text-txt-sec mt-1">(Sample data)</p>
+        </div>
+
+        <!-- Counter 3: Resolved This Week -->
+        <div class="rounded-lg border border-border bg-resolved-50 p-4" data-counter="resolved">
+          <p class="text-sm text-txt-sec mb-1">Resolved This Week</p>
+          <p class="text-3xl font-heading font-bold text-resolved-500" id="countResolved">184</p>
+          <p class="text-[10px] text-txt-sec mt-1">(Sample data)</p>
+        </div>
+      </div>
+
+      <!-- ============ TWO-COLUMN LAYOUT ============ -->
+      <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 mb-6">
+
+        <!-- LEFT: Overdue Tickets Table (3/5 width on xl) -->
+        <section class="xl:col-span-3 bg-panel rounded-lg border border-border" aria-labelledby="overdue-heading">
+          <div class="flex items-center gap-2.5 px-4 py-3 border-b border-border">
+            <h2 id="overdue-heading" class="font-heading font-bold text-sm text-txt">Overdue Complaints</h2>
+            <span class="bg-alert-50 text-alert-500 text-xs font-semibold rounded-full px-2 py-0.5" id="overdueCountBadge">23</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm" id="overdueTable">
+              <thead>
+                <tr class="border-b border-border text-left">
+                  <th scope="col" class="px-4 py-2.5 text-xs font-semibold text-txt-sec uppercase tracking-wide">Ref</th>
+                  <th scope="col" class="px-4 py-2.5 text-xs font-semibold text-txt-sec uppercase tracking-wide">Category</th>
+                  <th scope="col" class="px-4 py-2.5 text-xs font-semibold text-txt-sec uppercase tracking-wide">Location</th>
+                  <th scope="col" class="px-4 py-2.5 text-xs font-semibold text-txt-sec uppercase tracking-wide text-right">Overdue By</th>
+                  <th scope="col" class="px-4 py-2.5 text-xs font-semibold text-txt-sec uppercase tracking-wide hidden lg:table-cell">Assigned To</th>
+                  <th scope="col" class="px-4 py-2.5 text-xs font-semibold text-txt-sec uppercase tracking-wide">Action</th>
+                </tr>
+              </thead>
+              <tbody id="overdueBody">
+                <tr class="border-b border-border hover:bg-civic-50 transition-colors" data-zone="Koramangala">
+                  <th scope="row" class="px-4 py-3 font-semibold text-txt whitespace-nowrap">BLR-2026-02</th>
+                  <td class="px-4 py-3 text-txt-sec">Garbage &middot; Solid Waste Agency</td>
+                  <td class="px-4 py-3 text-txt">Koramangala &middot; Near 5th Block Park</td>
+                  <td class="px-4 py-3 text-right font-semibold text-alert-500">3 days</td>
+                  <td class="px-4 py-3 text-txt-sec hidden lg:table-cell">Ward Marshal &middot; Zone South-East</td>
+                  <td class="px-4 py-3"><button type="button" class="reassign-btn text-xs font-semibold border border-civic-500 text-civic-600 px-3 py-1 rounded-md hover:bg-civic-500 hover:text-white transition-colors focus:outline-2 focus:outline-offset-1 focus:outline-civic-500" data-ticket="BLR-2026-02">Reassign</button></td>
+                </tr>
+                <tr class="border-b border-border bg-surface hover:bg-civic-50 transition-colors" data-zone="Whitefield">
+                  <th scope="row" class="px-4 py-3 font-semibold text-txt whitespace-nowrap">BLR-2026-07</th>
+                  <td class="px-4 py-3 text-txt-sec">Water Leak &middot; BWSSB</td>
+                  <td class="px-4 py-3 text-txt">Whitefield &middot; ITPL Main Road Junction</td>
+                  <td class="px-4 py-3 text-right font-semibold text-alert-500">2 days</td>
+                  <td class="px-4 py-3 text-txt-sec hidden lg:table-cell">AEE &middot; Zone Mahadevapura</td>
+                  <td class="px-4 py-3"><button type="button" class="reassign-btn text-xs font-semibold border border-civic-500 text-civic-600 px-3 py-1 rounded-md hover:bg-civic-500 hover:text-white transition-colors focus:outline-2 focus:outline-offset-1 focus:outline-civic-500" data-ticket="BLR-2026-07">Reassign</button></td>
+                </tr>
+                <tr class="border-b border-border hover:bg-civic-50 transition-colors" data-zone="HSR Layout">
+                  <th scope="row" class="px-4 py-3 font-semibold text-txt whitespace-nowrap">BLR-2026-11</th>
+                  <td class="px-4 py-3 text-txt-sec">Pothole &middot; City Corporation</td>
+                  <td class="px-4 py-3 text-txt">HSR Layout &middot; Sector 2 Inner Ring</td>
+                  <td class="px-4 py-3 text-right font-semibold text-alert-500">2 days</td>
+                  <td class="px-4 py-3 text-txt-sec hidden lg:table-cell">Road Engineer &middot; Zone Bommanahalli</td>
+                  <td class="px-4 py-3"><button type="button" class="reassign-btn text-xs font-semibold border border-civic-500 text-civic-600 px-3 py-1 rounded-md hover:bg-civic-500 hover:text-white transition-colors focus:outline-2 focus:outline-offset-1 focus:outline-civic-500" data-ticket="BLR-2026-11">Reassign</button></td>
+                </tr>
+                <tr class="border-b border-border bg-surface hover:bg-civic-50 transition-colors" data-zone="Electronic City">
+                  <th scope="row" class="px-4 py-3 font-semibold text-txt whitespace-nowrap">BLR-2026-14</th>
+                  <td class="px-4 py-3 text-txt-sec">Streetlight &middot; BESCOM</td>
+                  <td class="px-4 py-3 text-txt">Electronic City &middot; Phase 2 Toll Gate</td>
+                  <td class="px-4 py-3 text-right font-semibold text-txt">1 day</td>
+                  <td class="px-4 py-3 text-txt-sec hidden lg:table-cell">Sub-Division AEE &middot; Zone South</td>
+                  <td class="px-4 py-3"><button type="button" class="reassign-btn text-xs font-semibold border border-civic-500 text-civic-600 px-3 py-1 rounded-md hover:bg-civic-500 hover:text-white transition-colors focus:outline-2 focus:outline-offset-1 focus:outline-civic-500" data-ticket="BLR-2026-14">Reassign</button></td>
+                </tr>
+                <tr class="border-b border-border hover:bg-civic-50 transition-colors" data-zone="Indiranagar">
+                  <th scope="row" class="px-4 py-3 font-semibold text-txt whitespace-nowrap">BLR-2026-18</th>
+                  <td class="px-4 py-3 text-txt-sec">Sewage Overflow &middot; BWSSB</td>
+                  <td class="px-4 py-3 text-txt">Indiranagar &middot; 100ft Road Cross</td>
+                  <td class="px-4 py-3 text-right font-semibold text-txt">1 day</td>
+                  <td class="px-4 py-3 text-txt-sec hidden lg:table-cell">AEE &middot; Zone East</td>
+                  <td class="px-4 py-3"><button type="button" class="reassign-btn text-xs font-semibold border border-civic-500 text-civic-600 px-3 py-1 rounded-md hover:bg-civic-500 hover:text-white transition-colors focus:outline-2 focus:outline-offset-1 focus:outline-civic-500" data-ticket="BLR-2026-18">Reassign</button></td>
+                </tr>
+                <tr class="hover:bg-civic-50 transition-colors" data-zone="Yelahanka">
+                  <th scope="row" class="px-4 py-3 font-semibold text-txt whitespace-nowrap">BLR-2026-21</th>
+                  <td class="px-4 py-3 text-txt-sec">Garbage &middot; Solid Waste Agency</td>
+                  <td class="px-4 py-3 text-txt">Yelahanka &middot; Old Town Bus Stand</td>
+                  <td class="px-4 py-3 text-right font-semibold text-txt">1 day</td>
+                  <td class="px-4 py-3 text-txt-sec hidden lg:table-cell">Ward Marshal &middot; Zone North</td>
+                  <td class="px-4 py-3"><button type="button" class="reassign-btn text-xs font-semibold border border-civic-500 text-civic-600 px-3 py-1 rounded-md hover:bg-civic-500 hover:text-white transition-colors focus:outline-2 focus:outline-offset-1 focus:outline-civic-500" data-ticket="BLR-2026-21">Reassign</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="px-4 py-3 border-t border-border">
+            <a href="#" class="text-sm text-civic-500 hover:text-civic-600 font-medium transition-colors" id="viewAllOverdue">View all 23 overdue</a>
+          </div>
+        </section>
+
+        <!-- RIGHT: Zone Health Panel (2/5 width on xl) -->
+        <section class="xl:col-span-2 bg-panel rounded-lg border border-border" aria-labelledby="zone-heading">
+          <div class="px-4 py-3 border-b border-border">
+            <h2 id="zone-heading" class="font-heading font-bold text-sm text-txt">Zone SLA Compliance</h2>
+            <p class="text-[10px] text-txt-sec mt-0.5">Working days only — excludes Karnataka holidays &amp; weekends (Sample data)</p>
+          </div>
+
+          <div class="divide-y divide-border" id="zoneHealthList">
+
+            <!-- Zone rows sorted worst-first -->
+            <div class="px-4 py-3" data-zone-row="Koramangala">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Koramangala</span>
+                <span class="text-sm font-heading font-bold text-alert-500">86.4%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-alert-500 transition-all duration-300" style="width: 86.4%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">South-East Zone &middot; Blocks 1&ndash;8</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="Whitefield">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Whitefield</span>
+                <span class="text-sm font-heading font-bold text-terra-500">90.8%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-terra-500 transition-all duration-300" style="width: 90.8%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">Mahadevapura Zone &middot; ITPL Corridor</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="HSR Layout">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">HSR Layout</span>
+                <span class="text-sm font-heading font-bold text-terra-500">92.7%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-terra-500 transition-all duration-300" style="width: 92.7%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">Bommanahalli Zone &middot; Sectors 1&ndash;7</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="Indiranagar">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Indiranagar</span>
+                <span class="text-sm font-heading font-bold text-terra-500">93.5%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-terra-500 transition-all duration-300" style="width: 93.5%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">East Zone &middot; 100ft / CMH Rd Corridor</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="Electronic City">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Electronic City</span>
+                <span class="text-sm font-heading font-bold text-terra-500">94.2%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-terra-500 transition-all duration-300" style="width: 94.2%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">South Suburbs &middot; Phase 1 &amp; 2</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="Yelahanka">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Yelahanka</span>
+                <span class="text-sm font-heading font-bold text-resolved-500">95.3%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-resolved-500 transition-all duration-300" style="width: 95.3%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">North Zone &middot; Old Town / Satellite Town</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="Malleshwaram">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Malleshwaram</span>
+                <span class="text-sm font-heading font-bold text-resolved-500">96.3%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-resolved-500 transition-all duration-300" style="width: 96.3%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">West Zone &middot; Margosa / Sampige Roads</span>
+            </div>
+
+            <div class="px-4 py-3" data-zone-row="Jayanagar">
+              <div class="flex justify-between items-baseline mb-1">
+                <span class="font-semibold text-sm text-txt">Jayanagar</span>
+                <span class="text-sm font-heading font-bold text-resolved-500">96.5%</span>
+              </div>
+              <div class="h-1.5 rounded-full bg-border mb-1">
+                <div class="h-full rounded-full bg-resolved-500 transition-all duration-300" style="width: 96.5%"></div>
+              </div>
+              <span class="text-[10px] text-txt-sec">South Zone &middot; Blocks 1&ndash;9 BDA</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ RECENT ACTIVITY LOG ============ -->
+      <section class="bg-panel rounded-lg border border-border mb-6" aria-labelledby="activity-heading">
+        <div class="px-4 py-3 border-b border-border">
+          <h2 id="activity-heading" class="font-heading font-bold text-sm text-txt">Recent Activity</h2>
+          <p class="text-[10px] text-txt-sec mt-0.5">System events &middot; Asia/Kolkata (IST) &middot; Sample data</p>
+        </div>
+
+        <div class="divide-y divide-border" id="activityLog">
+          <!-- Event: Escalation -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-alert-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">02/11/2026, 09:40 AM IST</time>
+              <p class="text-sm text-txt">BLR-2026-02 escalated to Zonal Joint Commissioner &mdash; Koramangala 5th Block garbage dump, 3 working days overdue</p>
+            </div>
+          </div>
+
+          <!-- Event: Resolution -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-resolved-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">02/11/2026, 08:15 AM IST</time>
+              <p class="text-sm text-txt">BLR-2026-03 marked resolved &mdash; Malleshwaram streetlight repair verified with geo-tagged photo</p>
+            </div>
+          </div>
+
+          <!-- Event: Dispatch -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-active-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">01/11/2026, 04:30 PM IST</time>
+              <p class="text-sm text-txt">BLR-2026-14 dispatched to BESCOM Sub-Division AEE &mdash; Electronic City Phase 2 streetlight outage</p>
+            </div>
+          </div>
+
+          <!-- Event: Registration -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-civic-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">01/11/2026, 02:10 PM IST</time>
+              <p class="text-sm text-txt">BLR-2026-21 registered &mdash; Yelahanka Old Town garbage accumulation near bus stand, SLA clock started (1 working day)</p>
+            </div>
+          </div>
+
+          <!-- Event: Resolution -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-resolved-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">01/11/2026, 11:45 AM IST</time>
+              <p class="text-sm text-txt">BLR-2026-09 marked resolved &mdash; Jayanagar 4th Block pothole patched, resident confirmation received</p>
+            </div>
+          </div>
+
+          <!-- Event: Escalation -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-alert-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">01/11/2026, 10:00 AM IST</time>
+              <p class="text-sm text-txt">BLR-2026-07 escalated to Executive Engineer &mdash; Whitefield ITPL water main leak, 2 working days overdue</p>
+            </div>
+          </div>
+
+          <!-- Event: Dispatch -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-active-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">31/10/2026, 03:20 PM IST</time>
+              <p class="text-sm text-txt">BLR-2026-18 dispatched to BWSSB field crew &mdash; Indiranagar 100ft Road sewage overflow</p>
+            </div>
+          </div>
+
+          <!-- Event: Registration -->
+          <div class="flex items-start gap-3 px-4 py-3">
+            <span class="w-2 h-2 rounded-full bg-civic-500 mt-1.5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <time class="text-[10px] text-txt-sec font-mono block">31/10/2026, 09:50 AM IST</time>
+              <p class="text-sm text-txt">BLR-2026-11 registered &mdash; HSR Layout Sector 2 pothole on inner ring road, SLA clock started (2 working days)</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="border-t border-border bg-panel px-4 py-3">
+    <p class="text-[10px] text-txt-sec text-center">
+      Sample data &middot; Student project &middot; Not affiliated with BBMP, BESCOM, BWSSB, or the Government of Karnataka &middot; Timezone: Asia/Kolkata (IST)
+    </p>
+  </footer>
+
+  <!-- ===================== TOAST CONTAINER ===================== -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ===================== JAVASCRIPT ===================== -->
+  <script>
+  (function () {
+    // --- IST Clock ---
+    const clockEl = document.getElementById('istClock');
+    function updateClock() {
+      const now = new Date();
+      const fmt = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      });
+      clockEl.textContent = fmt.format(now) + ' IST';
+      clockEl.setAttribute('datetime', now.toISOString());
+    }
+    updateClock();
+    setInterval(updateClock, 60000);
+
+    // --- Sidebar Toggle (Mobile) ---
+    const toggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebarPanel');
+    const backdrop = document.getElementById('sidebarBackdrop');
+
+    function openSidebar() {
+      sidebar.classList.remove('-translate-x-full');
+      backdrop.classList.remove('hidden');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+    function closeSidebar() {
+      sidebar.classList.add('-translate-x-full');
+      backdrop.classList.add('hidden');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+    toggle.addEventListener('click', function () {
+      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      isOpen ? closeSidebar() : openSidebar();
+    });
+    backdrop.addEventListener('click', closeSidebar);
+
+    // --- Sidebar Nav Active State ---
+    document.querySelectorAll('.sidebar-link[data-nav]').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelectorAll('.sidebar-link[data-nav]').forEach(function (l) {
+          l.classList.remove('sidebar-active');
+          l.classList.add('text-txt-sec');
+          l.removeAttribute('aria-current');
+        });
+        this.classList.add('sidebar-active');
+        this.classList.remove('text-txt-sec');
+        this.setAttribute('aria-current', 'page');
+      });
+    });
+
+    // --- Zone Filter ---
+    const zoneFilter = document.getElementById('zoneFilter');
+
+    // Sample counter data per zone
+    var zoneCounters = {
+      'all':             { overdue: 23, dueToday: 41, resolved: 184 },
+      'Indiranagar':     { overdue: 2,  dueToday: 5,  resolved: 28 },
+      'Koramangala':     { overdue: 6,  dueToday: 9,  resolved: 18 },
+      'Jayanagar':       { overdue: 1,  dueToday: 4,  resolved: 32 },
+      'Whitefield':      { overdue: 4,  dueToday: 7,  resolved: 22 },
+      'Malleshwaram':    { overdue: 1,  dueToday: 3,  resolved: 26 },
+      'HSR Layout':      { overdue: 3,  dueToday: 5,  resolved: 24 },
+      'Yelahanka':       { overdue: 2,  dueToday: 4,  resolved: 20 },
+      'Electronic City': { overdue: 4,  dueToday: 4,  resolved: 14 },
+    };
+
+    zoneFilter.addEventListener('change', function () {
+      var zone = this.value;
+      var data = zoneCounters[zone] || zoneCounters['all'];
+
+      document.getElementById('countOverdue').textContent = data.overdue;
+      document.getElementById('countDueToday').textContent = data.dueToday;
+      document.getElementById('countResolved').textContent = data.resolved;
+      document.getElementById('overdueCountBadge').textContent = data.overdue;
+      document.getElementById('viewAllOverdue').textContent = 'View all ' + data.overdue + ' overdue';
+
+      // Filter table rows
+      document.querySelectorAll('#overdueBody tr').forEach(function (row) {
+        if (zone === 'all' || row.getAttribute('data-zone') === zone) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Highlight matching zone health row
+      document.querySelectorAll('[data-zone-row]').forEach(function (el) {
+        if (zone === 'all') {
+          el.classList.remove('ring-2', 'ring-civic-500', 'ring-inset');
+        } else if (el.getAttribute('data-zone-row') === zone) {
+          el.classList.add('ring-2', 'ring-civic-500', 'ring-inset');
+        } else {
+          el.classList.remove('ring-2', 'ring-civic-500', 'ring-inset');
+        }
+      });
+    });
+
+    // --- Reassign Button Toasts ---
+    document.querySelectorAll('.reassign-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var ticket = this.getAttribute('data-ticket');
+        showToast('Reassigned ' + ticket + ' to next available field crew. (Sample action)');
+      });
+    });
+
+    function showToast(message) {
+      var container = document.getElementById('toastContainer');
+      var toast = document.createElement('div');
+      toast.className = 'bg-civic-600 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg max-w-sm opacity-0 transition-opacity duration-200';
+      toast.textContent = message;
+      toast.setAttribute('role', 'status');
+      container.appendChild(toast);
+
+      requestAnimationFrame(function () {
+        toast.classList.replace('opacity-0', 'opacity-100');
+      });
+
+      setTimeout(function () {
+        toast.classList.replace('opacity-100', 'opacity-0');
+        setTimeout(function () { toast.remove(); }, 200);
+      }, 4000);
+    }
+  })();
+  </script>
+</body>
+</html>
